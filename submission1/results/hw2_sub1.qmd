@@ -1,0 +1,55 @@
+---
+title: "Homework 2"
+subtitle: "Research Methods, Spring 2025"
+author: "Ryan Scholte"
+format:
+  pdf:
+    output-file: "Scholte-i-hw2-1"
+    output-ext: "pdf"
+    header-includes:
+      - \usepackage{float}
+      - \floatplacement{table}{H}
+jupyter: python3
+---
+You can access the [Repository](https://github.com/rscholt/HW2/tree/40f3df4312fe9d68b7554fc1aaa383e4ac79a6ec/submission1))
+
+```{python}
+#| echo: false  # Hides code but keeps output
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+#read in data
+hcris_data=pd.read_csv('/Users/ryanscholte/Desktop/GitHub/HW2/data/output/HCRIS_Data.csv')
+
+# Count hospitals that filed more than one report in the same year
+hospital_counts = hcris_data.groupby(['provider_number', 'year']).size().reset_index(name='report_count')
+multiple_reports = hospital_counts[hospital_counts['report_count'] > 1]
+# Count number of hospitals per year
+hospitals_over_time = multiple_reports.groupby('year')['provider_number'].nunique()
+
+# Plot the results
+plt.figure()
+plt.plot(hospitals_over_time.index, hospitals_over_time.values)
+plt.xlabel('Year')
+plt.ylabel('Number of Hospitals')
+plt.title('Hospitals Filing More Than One Report Per Year Over Time')
+plt.grid(True)
+plt.show()
+```
+
+\newpage
+
+# 2
+
+```{python}
+#| echo: false  # Hides code but keeps output
+#remove duplicates
+unique_hospitals = hcris_data.drop_duplicates(subset=['provider_number', 'year'])
+#count unique hospitals
+unique_hospital_count = unique_hospitals['provider_number'].nunique()
+print("Count of unique hospital IDs:", unique_hospital_count)
+
+```
+
+# need to fix cleaning issues all cells empty can't figure that out yet !!

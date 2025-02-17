@@ -2,8 +2,8 @@ import pandas as pd
 import numpy as np
 
 # Call individual scripts
-exec(open('submission1/datacode/hcris_1996.py').read())
-exec(open('submission1/datacode/hcris_2010.py').read())
+#exec(open('submission1/datacode/hcris_1996.py').read())
+#exec(open('submission1/datacode/hcris_2010.py').read())
 
 # Read and combine data
 final_hcris_v1996 = pd.read_csv('data/output/Final_HCRIS_v1996.csv')
@@ -103,4 +103,4 @@ final_hcris_data = final_hcris_data.rename(columns={'fyear': 'year'}).sort_value
 
 
 # Save final data 
-final_hcris_data.to_csv('data/output/HCRIS_Data.csv', index=False)
+final_hcris_data.to_csv("data/output/HCRIS_Data.csv", index=False)
