@@ -106,4 +106,4 @@ final_hcris_data = final_hcris_data.rename(columns={'fyear': 'year'}).sort_value
 
 
 # Save final data 
-final_hcris_data.to_csv('/Users/ryanscholte/Desktop/GitHub/HW2/data/output/HCRIS_Data.csv', index=False)
+final_hcris_data.to_csv('/Users/ryanscholte/Desktop/GitHub/HW2/data/output/HCRIS_Datac.csv', index=False)

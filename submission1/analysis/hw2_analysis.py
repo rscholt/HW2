@@ -88,57 +88,57 @@ avg_price_by_penalty = hcris_2012.groupby('penalty')['estimated_price'].mean()
 #________
 
 
-# # Assume `hcris_2012_b` contains the dataset with `penalty`, `estimated_price`, and `beds`
-# hcris_2012_b = hcris_2012.copy()
+# Assume `hcris_2012_b` contains the dataset with `penalty`, `estimated_price`, and `beds`
+hcris_2012_b = hcris_2012.copy()
 
-# # **Step 1: Create Bed Size Quartiles**
-# hcris_2012_b['bed_quartile'] = pd.qcut(hcris_2012_b['beds'], q=4, labels=[1, 2, 3, 4])
+# **Step 1: Create Bed Size Quartiles**
+hcris_2012_b['bed_quartile'] = pd.qcut(hcris_2012_b['beds'], q=4, labels=[1, 2, 3, 4])
 
-# # **Step 2: Nearest Neighbor Matching (Inverse Variance Distance)**
-# bed_var = hcris_2012_b.groupby('bed_quartile')['beds'].var()
-# hcris_2012_b['variance_weight'] = hcris_2012_b['bed_quartile'].map(bed_var)
-# hcris_2012_b['variance_weight'] = 1 / hcris_2012_b['variance_weight']
+# **Step 2: Nearest Neighbor Matching (Inverse Variance Distance)**
+bed_var = hcris_2012_b.groupby('bed_quartile')['beds'].var()
+hcris_2012_b['variance_weight'] = hcris_2012_b['bed_quartile'].map(bed_var)
+hcris_2012_b['variance_weight'] = 1 / hcris_2012_b['variance_weight']
 
-# # Find closest match based on inverse variance distance
-# hcris_2012_b_sorted = hcris_2012_b.sort_values(by=['variance_weight'])
-# hcris_2012_b['matched_iv'] = hcris_2012_b_sorted['estimated_price'].shift(-1)  # Approximate 1-to-1 matching
-# ate_nn_iv = (hcris_2012_b[hcris_2012_b['penalty'] == 1]['estimated_price'] - hcris_2012_b[hcris_2012_b['penalty'] == 1]['matched_iv']).mean()
+# Find closest match based on inverse variance distance
+hcris_2012_b_sorted = hcris_2012_b.sort_values(by=['variance_weight'])
+hcris_2012_b['matched_iv'] = hcris_2012_b_sorted['estimated_price'].shift(-1)  # Approximate 1-to-1 matching
+ate_nn_iv = (hcris_2012_b[hcris_2012_b['penalty'] == 1]['estimated_price'] - hcris_2012_b[hcris_2012_b['penalty'] == 1]['matched_iv']).mean()
 
-# # **Step 3: Nearest Neighbor Matching (Mahalanobis Distance)**
-# bed_mean = hcris_2012_b.groupby('bed_quartile')['beds'].mean()
-# bed_std = hcris_2012_b.groupby('bed_quartile')['beds'].std()
-# hcris_2012_b['mahal_dist'] = ((hcris_2012_b['beds'] - hcris_2012_b['bed_quartile'].map(bed_mean)) / hcris_2012_b['bed_quartile'].map(bed_std)).abs()
+# **Step 3: Nearest Neighbor Matching (Mahalanobis Distance)**
+bed_mean = hcris_2012_b.groupby('bed_quartile')['beds'].mean()
+bed_std = hcris_2012_b.groupby('bed_quartile')['beds'].std()
+hcris_2012_b['mahal_dist'] = ((hcris_2012_b['beds'] - hcris_2012_b['bed_quartile'].map(bed_mean)) / hcris_2012_b['bed_quartile'].map(bed_std)).abs()
 
-# # Find closest match based on Mahalanobis distance
-# hcris_2012_b_sorted = hcris_2012_b.sort_values(by=['mahal_dist'])
-# hcris_2012_b['matched_mahal'] = hcris_2012_b_sorted['estimated_price'].shift(-1)
-# ate_nn_mahal = (hcris_2012_b[hcris_2012_b['penalty'] == 1]['estimated_price'] - hcris_2012_b[hcris_2012_b['penalty'] == 1]['matched_mahal']).mean()
+# Find closest match based on Mahalanobis distance
+hcris_2012_b_sorted = hcris_2012_b.sort_values(by=['mahal_dist'])
+hcris_2012_b['matched_mahal'] = hcris_2012_b_sorted['estimated_price'].shift(-1)
+ate_nn_mahal = (hcris_2012_b[hcris_2012_b['penalty'] == 1]['estimated_price'] - hcris_2012_b[hcris_2012_b['penalty'] == 1]['matched_mahal']).mean()
 
-# # **Step 4: Inverse Propensity Weighting (IPW)**
-# ps = hcris_2012_b.groupby('bed_quartile')['penalty'].mean()
-# hcris_2012_b['propensity_score'] = hcris_2012_b['bed_quartile'].map(ps)
-# hcris_2012_b['ipw_weight'] = 1 / hcris_2012_b['propensity_score']
+# **Step 4: Inverse Propensity Weighting (IPW)**
+ps = hcris_2012_b.groupby('bed_quartile')['penalty'].mean()
+hcris_2012_b['propensity_score'] = hcris_2012_b['bed_quartile'].map(ps)
+hcris_2012_b['ipw_weight'] = 1 / hcris_2012_b['propensity_score']
 
-# ate_ipw = (hcris_2012_b['ipw_weight'] * hcris_2012_b['penalty'] * hcris_2012_b['estimated_price']).mean() - (
-#     hcris_2012_b['ipw_weight'] * (1 - hcris_2012_b['penalty']) * hcris_2012_b['estimated_price']
-# ).mean()
+ate_ipw = (hcris_2012_b['ipw_weight'] * hcris_2012_b['penalty'] * hcris_2012_b['estimated_price']).mean() - (
+    hcris_2012_b['ipw_weight'] * (1 - hcris_2012_b['penalty']) * hcris_2012_b['estimated_price']
+).mean()
 
-# # **Step 5: Simple Linear Regression with Bed Quartiles**
-# X = np.column_stack((np.ones(len(hcris_2012_b)), pd.get_dummies(hcris_2012_b['bed_quartile']), hcris_2012_b['penalty']))
-# y = hcris_2012_b['estimated_price'].values
+# **Step 5: Simple Linear Regression with Bed Quartiles**
+X = np.column_stack((np.ones(len(hcris_2012_b)), pd.get_dummies(hcris_2012_b['bed_quartile']), hcris_2012_b['penalty']))
+y = hcris_2012_b['estimated_price'].values
 
-# # Solve using normal equation (OLS)
-# beta = np.linalg.inv(X.T @ X) @ X.T @ y
-# ate_regression = beta[-1]  # The coefficient for `penalty`
+# Solve using normal equation (OLS)
+beta = np.linalg.inv(X.T @ X) @ X.T @ y
+ate_regression = beta[-1]  # The coefficient for `penalty`
 
-# # **Step 6: Present Results in a Table**
-# ate_results = pd.DataFrame(
-#     "Method": [
-#         "NN Matching (Inverse Variance)",
-#         "NN Matching (Mahalanobis)",
-#         "Inverse Propensity Weighting",
-#         "Linear Regression"
-#     ],
-#     "Estimated ATE": [ate_nn_iv, ate_nn_mahal, ate_ipw, ate_regression]
+# **Step 6: Present Results in a Table**
+ate_results = pd.DataFrame(
+    "Method": [
+        "NN Matching (Inverse Variance)",
+        "NN Matching (Mahalanobis)",
+        "Inverse Propensity Weighting",
+        "Linear Regression"
+    ],
+    "Estimated ATE": [ate_nn_iv, ate_nn_mahal, ate_ipw, ate_regression]
 
-# need to fix cleaning issues all cells empty can't figure that out yet !!
+need to fix cleaning issues all cells empty can't figure that out yet !!
