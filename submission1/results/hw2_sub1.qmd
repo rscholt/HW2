@@ -11,7 +11,7 @@ format:
       - \floatplacement{table}{H}
 jupyter: python3
 ---
-You can access the [Repository](https://github.com/rscholt/HW2/tree/40f3df4312fe9d68b7554fc1aaa383e4ac79a6ec/submission1))
+You can access the [Repository](https://github.com/rscholt/HW2/tree/40f3df4312fe9d68b7554fc1aaa383e4ac79a6ec/submission1)
 
 ```{python}
 #| echo: false  # Hides code but keeps output
