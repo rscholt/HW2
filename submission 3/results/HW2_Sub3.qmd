@@ -4,14 +4,14 @@ subtitle: "Research Methods, Spring 2025"
 author: "Ryan Scholte"
 format:
   pdf:
-    output-file: "Scholte-i-hw2-2"
+    output-file: "Scholte-i-hw2-3"
     output-ext: "pdf"
     header-includes:
       - \usepackage{float}
       - \floatplacement{table}{H}
 jupyter: python3
 ---
-You can access the [Repository]()
+You can access the [Repository](https://github.com/rscholt/HW2/tree/1b5e3f72ea291baa14d7c9d34559778cb1967d89/submission%203)
 
 # Question 1
 
@@ -95,15 +95,15 @@ plt.figure(figsize=(12, 6))
 sns.violinplot (x='year', y='log_tot_charges', data=charges_by_year)
 plt.title("Total Charges by Year")
 plt.xlabel ("Year")
-plt.ylabel("Total Charges")
+plt.ylabel("Log Total Charges")
 plt.xticks(rotation=45)
 plt.grid(True, which='both', linestyle='--', linewidth=0.5)
 plt.show( )
 
-
-
 ```
+# I filtered the data by: dropped all na, took absolute value of all charges, limited to charges above 1000, limited to charges in the bottom 90% to cut out outliers, used a log scale to represent
 
+\newpage
 
 # Question 4
 
@@ -145,6 +145,8 @@ plt.grid(True, which='both', linestyle='--', linewidth=0.5)
 plt. show()
 
 ```
+# I filtered the data by: dropped all na, calculated estimated price followoing slides, filtered to only positive value of estimate prices, limited to charges in the bottom 75% to cut out outliers
+
 
 
 # Question 5
