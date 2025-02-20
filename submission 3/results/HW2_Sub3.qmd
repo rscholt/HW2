@@ -1,0 +1,275 @@
+---
+title: "Homework 2"
+subtitle: "Research Methods, Spring 2025"
+author: "Ryan Scholte"
+format:
+  pdf:
+    output-file: "Scholte-i-hw2-2"
+    output-ext: "pdf"
+    header-includes:
+      - \usepackage{float}
+      - \floatplacement{table}{H}
+jupyter: python3
+---
+You can access the [Repository]()
+
+# Question 1
+
+```{python}
+#| echo: false  # Hides code but keeps output
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+#read in data
+hcris_data=pd.read_csv('/Users/ryanscholte/Desktop/GitHub/HW2/data/output/HCRIS_Datac.csv')
+hcris_data_preclean=pd.read_csv('/Users/ryanscholte/Desktop/GitHub/HW2/data/output/HCRIS_Data_preclean.csv')
+
+
+# Convert 'fy_start' to datetime to extract the year
+hcris_data_preclean['fy_start'] = pd.to_datetime(hcris_data_preclean['fy_start'], errors='coerce')
+hcris_data_preclean['year'] = hcris_data_preclean['fy_start'].dt.year
+
+# Count hospitals that filed more than one report in the same year
+hospital_counts = hcris_data_preclean.groupby(['provider_number', 'year']).size().reset_index(name='report_count')
+multiple_reports = hospital_counts[hospital_counts['report_count'] > 1]
+
+# Count number of hospitals per year
+hospitals_over_time = multiple_reports.groupby('year')['provider_number'].nunique()
+
+#print(hospitals_over_time)
+
+# Plot the results
+plt.figure()
+plt.plot(hospitals_over_time.index, hospitals_over_time.values)
+plt.xlabel('Year')
+plt.xticks(hospitals_over_time.index, rotation=45) 
+plt.ylabel('Number of Hospitals')
+plt.title('Hospitals Filing More Than One Report Per Year Over Time')
+plt.grid(True)
+plt.show()
+```
+
+
+# Question 2
+
+```{python}
+#| echo: false  # Hides code but keeps output
+#question 2
+# Remove duplicate reports by keeping only the first occurrence per hospital per year
+unique_hospitals = hcris_data.drop_duplicates(subset=['provider_number', 'year'])
+
+# Count the number of unique hospital IDs (Medicare provider numbers)
+unique_hospital_count = unique_hospitals['provider_number'].nunique()
+
+# Display the result
+print("Number of unique hospital IDs:", unique_hospital_count)
+
+```
+
+# Question 3
+
+```{python}
+#| echo: false  # Hides code but keeps output
+import seaborn as sns
+#Question 3
+hcris_data['tot_charges'] = pd.to_numeric(hcris_data['tot_charges'], errors='coerce')
+# Convert tot_charges to numeric
+hcris_data['tot_charges'] = pd.to_numeric(hcris_data['tot_charges'], errors='coerce')
+#Remove rows with missing charges or years, negative values to absolute value, and outliers
+charges_by_year = hcris_data[['year','tot_charges']].dropna ()
+charges_by_year['tot_charges'] = charges_by_year['tot_charges'].abs()
+
+
+# # Display summary statistics to find cutoff values
+summary_stats = charges_by_year ['tot_charges']. describe ()
+
+#creating bounds 
+charges_by_year = charges_by_year[charges_by_year['tot_charges'] > 1000]
+upper_bound = summary_stats['90%'] if '90%' in summary_stats else summary_stats['max']
+charges_by_year = charges_by_year [charges_by_year['tot_charges'] <= upper_bound]
+charges_by_year['log_tot_charges'] = np.log(charges_by_year['tot_charges'] + 1)  
+
+# Plot violin plot
+plt.figure(figsize=(12, 6)) 
+sns.violinplot (x='year', y='log_tot_charges', data=charges_by_year)
+plt.title("Total Charges by Year")
+plt.xlabel ("Year")
+plt.ylabel("Total Charges")
+plt.xticks(rotation=45)
+plt.grid(True, which='both', linestyle='--', linewidth=0.5)
+plt.show( )
+
+
+
+```
+
+
+# Question 4
+
+```{python}
+#| echo: false  # Hides code but keeps output
+#Question 4
+#Converting columns to numeric
+numeric_columns = [
+    'tot_discounts', 'tot_charges',
+    'ip_charges', 'icu_charges', 'ancillary_charges',
+    'tot_mcare_payment', 'tot_discharges', 'mcare_discharges'
+]
+hcris_data[numeric_columns] = hcris_data[numeric_columns].apply(pd.to_numeric, errors='coerce')
+# Remove missing values
+hcris_clean = hcris_data[['year'] + numeric_columns].dropna( )
+
+# Calculate estimated price based on the formula
+discount_factor = 1 - hcris_clean['tot_discounts'] / hcris_clean ['tot_charges']
+price_num = (hcris_clean['ip_charges'] + hcris_clean['icu_charges'] + hcris_clean['ancillary_charges']) * discount_factor - hcris_clean[ 'tot_mcare_payment']
+price_denom = hcris_clean['tot_discharges'] - hcris_clean ['mcare_discharges']
+
+hcris_clean['estimated_price'] = price_num/price_denom
+#removing outliers and negatives
+hcris_clean = hcris_clean[hcris_clean['estimated_price'] > 0]
+
+summary_stats = hcris_clean['estimated_price'].describe()
+# print (summary_stats)
+
+upper_bound = summary_stats ['75%'] if '75%' in summary_stats else summary_stats ['max']
+hcris_clean = hcris_clean[hcris_clean['estimated_price'] <= upper_bound]
+#Plot violin plot
+plt.figure(figsize=(12, 6))
+sns.violinplot(x='year', y='estimated_price', data=hcris_clean)
+plt.title("Estimated Prices by Year")
+plt.xlabel ("Year")
+plt.ylabel("Estimated Price")
+plt.xticks(rotation=45)
+plt.grid(True, which='both', linestyle='--', linewidth=0.5)
+plt. show()
+
+```
+
+
+# Question 5
+
+```{python}
+#| echo: false  # Hides code but keeps output
+#Q5.
+
+# Filter data to only include year 2012
+hcris_2012 = hcris_data[hcris_data['year'] == 2012].copy()
+
+# Calculate estimated price using the given formula
+hcris_2012['discount_factor'] = 1 - (hcris_2012['tot_discounts'] / hcris_2012['tot_charges'])
+hcris_2012['price_num'] = (hcris_2012['ip_charges'] + hcris_2012['icu_charges'] + hcris_2012['ancillary_charges']) * hcris_2012['discount_factor'] - hcris_2012['tot_mcare_payment']
+hcris_2012['price_denom'] = hcris_2012['tot_discharges'] - hcris_2012['mcare_discharges']
+hcris_2012['price'] = hcris_2012['price_num'] / hcris_2012['price_denom']
+
+# Define penalty
+hcris_2012['penalty'] = (hcris_2012['hrrp_payment'] + hcris_2012['hvbp_payment']) < 0
+
+# Clean data
+hcris_2012 = hcris_2012[(hcris_2012['price_denom'] > 100) & (hcris_2012['price_num'] > 0) & (hcris_2012['price'] > 0)]
+hcris_2012 = hcris_2012[hcris_2012['beds'] > 30]
+hcris_2012 = hcris_2012[hcris_2012['price'] < 100000]  
+
+# NA payments
+hcris_2012['hvbp_payment'] = hcris_2012['hvbp_payment'].fillna(0)
+hcris_2012['hrrp_payment'] = hcris_2012['hrrp_payment'].fillna(0).abs()
+
+
+# Calculate average price for penalized vs non-penalized hospitals
+mean_penalized = round(hcris_2012.loc[hcris_2012['penalty'] == 1, 'price'].mean(), 2)
+mean_non_penalized = round(hcris_2012.loc[hcris_2012['penalty'] == 0, 'price'].mean(), 2)
+
+print(f"Mean price for penalized hospitals: {mean_penalized}")
+print(f"Mean price for non-penalized hospitals: {mean_non_penalized}")
+
+```
+
+# Question 6
+
+```{python}
+#| echo: false  # Hides code but keeps output
+#Q6
+hcris_2012['beds_quartile'] = pd.qcut(hcris_2012['beds'], 4, labels=[1, 2, 3, 4])
+
+# Create indicator variables for each quartile
+for i in range(1, 5):
+    hcris_2012[f'quartile_{i}'] = (hcris_2012['beds_quartile'] == i).astype(int)
+
+
+# Calculate average price for treated and control groups within each quartile
+Avg_per_group = []
+for i in range(1, 5):
+    treated_mean = hcris_2012.loc[(hcris_2012[f'quartile_{i}'] == 1) & (hcris_2012['penalty'] == 1), 'price'].mean()
+    control_mean = hcris_2012.loc[(hcris_2012[f'quartile_{i}'] == 1) & (hcris_2012['penalty'] == 0), 'price'].mean()
+    Avg_per_group.append({'Quartile': i, 'Penalized_Mean_Price': round(treated_mean, 2), 'Non_penalized_Mean_Price': round(control_mean, 2)})
+
+results_df = pd.DataFrame(Avg_per_group)
+print(results_df.to_string(index=False))
+```
+
+\newpage
+
+# Question 7
+
+```{python}
+#| echo: false  # Hides code but keeps output
+from causalinference import CausalModel
+import warnings
+warnings.simplefilter('ignore')
+
+
+hcris_2012['bed_quartile'] = pd.qcut(hcris_2012['beds'], 4, labels=False)
+bed_quart_dummies = pd.get_dummies(hcris_2012['bed_quartile'], prefix='bed_quart').iloc[:, :-1] * 1
+bed_quart_dummies = bed_quart_dummies.sub(bed_quart_dummies.mean(axis=0), axis=1)
+
+
+y = hcris_2012['price'].values
+D = hcris_2012['penalty'].values
+X = bed_quart_dummies.values
+causal_model = CausalModel(Y=y, D=D, X=X)
+
+results = pd.DataFrame(index=['ATE', 'SE'], columns= ['INV', 'MAH', 'IPW', 'OLS'])
+
+# Estimate with inverse weighting
+causal_model.est_via_matching(weights='inv', matches=1, bias_adj=True)
+inv_ate = causal_model.estimates['matching']['ate']
+inv_se = causal_model.estimates['matching']['ate_se']
+results.loc['ATE', 'INV'] = inv_ate
+results.loc['SE', 'INV'] = inv_se
+
+
+# Estimate with Mahalanobis distance
+causal_model.est_via_matching(weights='maha', matches=1, bias_adj=True)
+maha_ate = causal_model.estimates['matching']['ate']
+maha_se = causal_model.estimates['matching']['ate_se']
+results.loc['ATE', 'MAH'] = maha_ate
+results.loc['SE', 'MAH'] = maha_se
+
+
+# Estimate Propensity Scores using the built-in method
+causal_model.est_propensity()
+causal_model.est_via_weighting()
+ipw_ate = causal_model.estimates['weighting']['ate']
+ipw_se = causal_model.estimates['weighting']['ate_se']
+results.loc['ATE', 'IPW'] = ipw_ate
+results.loc['SE', 'IPW'] = ipw_se
+
+causal_model.est_via_ols(adj=2)
+ols_ate = causal_model.estimates['ols']['ate']
+ols_se = causal_model.estimates['ols']['ate_se']
+results.loc['ATE', 'OLS'] = ols_ate 
+results.loc['SE', 'OLS'] = ols_se 
+
+print(results)
+```
+
+
+# 8
+all ATE are the same. The ATE assumes that  a penalized hospital will have a $299 increase in price when accounting for number of hospital beds. 
+
+# 9
+I think there are many other issues we talked about that we cant assume to determine the causality between a hospital being penalized increasing the estimated price. Those can be unobserved factors like patient acuity or hospital location that affect the chance of a hospital being penalized. This means penalized hospitals arent assigned randomly and have other factors that are not fully controlled for. 
+
+
+# 10
+It was very difficult especially if the cleaning is not done correctly. Also using a bunch new packages is tough. I learned that file paths are super frustrating and can change all the time but there a bunch of differeent solutions and I haven't found a consistent or one I have learned to use consistently yet. I also learned after talking with classmates and Pablo there is almost always a simpler way than what you thought or tried even if you get the same answer. I often did manual calculations rather than using the packages properly. Getting familiar with different packages and capapbilities can save a bunch of time if you invest in that at the start. 
